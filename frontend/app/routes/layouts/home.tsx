@@ -5,7 +5,7 @@ const HomeLayout = () => {
   return (
     <>
       <Hero />
-      <section className="max-w-6xl mx-auto px-6 my-8">
+      <section className="max-w-6xl mx-auto px-4 pb-10">
         <Outlet />
       </section>
     </>
