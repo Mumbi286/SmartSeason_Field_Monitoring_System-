@@ -1,25 +1,31 @@
 import { NavLink } from "react-router";
 import { FaLeaf, FaTimes, FaBars } from "react-icons/fa";
 import { useState } from "react";
+import { useAppContext } from "~/context/AppContext";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const base = "transition hover:text-black";
-  const active = "text-green-400 font-semibold";
+  const { currentUser, logout } = useAppContext();
+  const base = "transition hover:text-green-300";
+  const active = "text-green-300 font-semibold";
+  const authLabel = currentUser ? "Dashboard" : "Log In";
+  const authTarget = currentUser ? "/dashboard" : "/login";
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav className="bg-green-800 border-b border-green-950 shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <nav className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
         <NavLink
           to="/"
-          className="flex items-center gap-2 text-lg font-bold text-green-300"
+          className="flex items-center gap-2 text-base sm:text-lg font-semibold text-green-300"
         >
-          <FaLeaf className="text-green-400 text-xl" />
-          <span>Smart Season Field Monitoring System</span>
+          <FaLeaf className="text-green-400 text-lg" />
+          <span>Smart Season Field Monitoring</span>
         </NavLink>
 
-        {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          <div className="space-x-4 text-sm text-shadow-white">
+          <div className="space-x-4 text-sm text-slate-200">
             <NavLink
               className={({ isActive }) => (isActive ? active : base)}
               to="/"
@@ -38,25 +44,25 @@ const Navbar = () => {
             >
               Contact Us
             </NavLink>
-            <NavLink
-              className={({ isActive }) => (isActive ? active : base)}
-              to="/login"
-            >
-              Log In
+            <NavLink className={({ isActive }) => (isActive ? active : base)} to={authTarget}>
+              {authLabel}
             </NavLink>
-            <NavLink
-              className={({ isActive }) => (isActive ? active : base)}
-              to="/signup"
-            >
-              Sign Up
-            </NavLink>
+            {currentUser && (
+              <button
+                className="text-sm text-red-300 hover:text-red-200 transition cursor-pointer"
+                onClick={logout}
+                type="button"
+              >
+                Log Out
+              </button>
+            )}
           </div>
         </div>
         {/* Hambugger Menu */}
         <div className="md:hidden flex items-center gap-4">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="text-green-400 text-xl cursor-pointer"
+            className="text-slate-200 text-xl cursor-pointer"
             title="Menu"
           >
             {menuOpen ? <FaTimes /> : <FaBars />}
@@ -66,42 +72,47 @@ const Navbar = () => {
 
       {/* Mobile Nav */}
       {menuOpen && (
-        <div className="md:hidden bg-green-700 border-t border-green-700 px-6 py-4 space-y-2 space-x-4 text-center">
+        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 py-3 space-y-2 text-center">
           <NavLink
             className={({ isActive }) => (isActive ? active : base)}
             to="/"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
             Home
           </NavLink>
           <NavLink
             className={({ isActive }) => (isActive ? active : base)}
             to="/about"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
             About
           </NavLink>
           <NavLink
             className={({ isActive }) => (isActive ? active : base)}
             to="/contact"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
             Contact Us
           </NavLink>
           <NavLink
             className={({ isActive }) => (isActive ? active : base)}
-            to="/login"
-            onClick={() => setMenuOpen(false)}
+            to={authTarget}
+            onClick={closeMenu}
           >
-            Log In
+            {authLabel}
           </NavLink>
-          <NavLink
-            className={({ isActive }) => (isActive ? active : base)}
-            to="/signup"
-            onClick={() => setMenuOpen(false)}
-          >
-            Sign Up
-          </NavLink>
+          {currentUser && (
+            <button
+              className="text-red-300 hover:text-red-200 transition cursor-pointer"
+              onClick={() => {
+                logout();
+                closeMenu();
+              }}
+              type="button"
+            >
+              Log Out
+            </button>
+          )}
         </div>
       )}
     </nav>
