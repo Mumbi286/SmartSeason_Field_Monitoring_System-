@@ -30,3 +30,4 @@ class FieldResponse(BaseModel):
     assigned_agent_id: Optional[int]
     created_by: int
     created_at: datetime
+    status: str

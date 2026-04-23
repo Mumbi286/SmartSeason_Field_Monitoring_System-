@@ -11,6 +11,7 @@ from app.models.field_update import FieldUpdate
 from app.models.user import User
 from app.schemas.field_updates import FieldUpdateCreate, FieldUpdateResponse
 from app.schemas.fields import FieldAssignRequest, FieldCreate, FieldResponse
+from app.services.field_status import build_field_payload, get_last_update_map
 
 
 router = APIRouter(prefix="/fields", tags=["fields"])
@@ -20,16 +21,23 @@ router = APIRouter(prefix="/fields", tags=["fields"])
 def list_fields(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> List[Field]:
+) -> List[FieldResponse]:
     if current_user.role == UserRole.admin:
-        return db.query(Field).order_by(Field.id.asc()).all()
+        fields = db.query(Field).order_by(Field.id.asc()).all()
+    else:
+        fields = (
+            db.query(Field)
+            .filter(Field.assigned_agent_id == current_user.id)
+            .order_by(Field.id.asc())
+            .all()
+        )
 
-    return (
-        db.query(Field)
-        .filter(Field.assigned_agent_id == current_user.id)
-        .order_by(Field.id.asc())
-        .all()
-    )
+    field_ids = [field.id for field in fields]
+    last_update_map = get_last_update_map(db, field_ids)
+    return [
+        FieldResponse(**build_field_payload(field, last_update_map.get(field.id)))
+        for field in fields
+    ]
 
 
 # Create a new field by an admin user
@@ -38,7 +46,7 @@ def create_field(
     payload: FieldCreate,
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin),
-) -> Field:
+) -> FieldResponse:
     if payload.assigned_agent_id is not None:
         assigned_agent = db.get(User, payload.assigned_agent_id)
         if assigned_agent is None or assigned_agent.role != UserRole.agent:
@@ -58,7 +66,7 @@ def create_field(
     db.add(field)
     db.commit()
     db.refresh(field)
-    return field
+    return FieldResponse(**build_field_payload(field, None))
 
 # Assign a field to an agent by an admin user
 @router.patch("/{field_id}/assign", response_model=FieldResponse)
@@ -67,7 +75,7 @@ def assign_field(
     payload: FieldAssignRequest,
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin),
-) -> Field:
+) -> FieldResponse:
     del admin_user  # dependency enforces admin role
 
     field = db.get(Field, field_id)
@@ -88,7 +96,7 @@ def assign_field(
     field.assigned_agent_id = payload.assigned_agent_id
     db.commit()
     db.refresh(field)
-    return field
+    return FieldResponse(**build_field_payload(field, None))
 
 # Create a field update by an agent user
 # Create a new field update for a field
