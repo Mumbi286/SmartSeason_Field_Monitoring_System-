@@ -72,30 +72,38 @@ const Navbar = () => {
 
       {/* Mobile Nav */}
       {menuOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 py-3 space-y-2 text-center">
+        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 py-3 space-y-3 text-center">
           <NavLink
-            className={({ isActive }) => (isActive ? active : base)}
+            className={({ isActive }) =>
+              `${isActive ? active : base} block py-1`
+            }
             to="/"
             onClick={closeMenu}
           >
             Home
           </NavLink>
           <NavLink
-            className={({ isActive }) => (isActive ? active : base)}
+            className={({ isActive }) =>
+              `${isActive ? active : base} block py-1`
+            }
             to="/about"
             onClick={closeMenu}
           >
             About
           </NavLink>
           <NavLink
-            className={({ isActive }) => (isActive ? active : base)}
+            className={({ isActive }) =>
+              `${isActive ? active : base} block py-1`
+            }
             to="/contact"
             onClick={closeMenu}
           >
             Contact Us
           </NavLink>
           <NavLink
-            className={({ isActive }) => (isActive ? active : base)}
+            className={({ isActive }) =>
+              `${isActive ? active : base} block py-1`
+            }
             to={authTarget}
             onClick={closeMenu}
           >
@@ -103,7 +111,7 @@ const Navbar = () => {
           </NavLink>
           {currentUser && (
             <button
-              className="text-red-300 hover:text-red-200 transition cursor-pointer"
+              className="block w-full py-1 text-red-300 hover:text-red-200 transition cursor-pointer"
               onClick={() => {
                 logout();
                 closeMenu();

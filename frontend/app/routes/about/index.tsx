@@ -1,3 +1,6 @@
+import { useState } from "react";
+
+// organization information cards shown on the About page.
 const companyHighlights = [
   {
     title: "Summary",
@@ -43,33 +46,53 @@ const comments = [
 ];
 
 const AboutPage = () => {
+  // Duplicate list creates a seamless loop for the scrolling comments row.
   const scrollingComments = [...comments, ...comments];
   const maxStars = 5;
+  // Controls read more/read less state per highlight card.
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   return (
     <section className="space-y-10 text-white">
+      {/* Page intro section */}
       <div>
         <h1 className="text-3xl font-bold mb-2">
-          About SmartSeason Field
+          Learn About SmartSeason Field Monitoring
         </h1>
         <p className="text-gray-300">
-          Learn more about who we are, what users are saying, and how the
-          platform supports better farming decisions.
+        Discover who we are, hear from our users, and see how our platform empowers smarter, data-driven farming decisions.
         </p>
       </div>
 
+      {/* Highlights section with expandable text area */}
       <div className="grid gap-4 md:grid-cols-3">
         {companyHighlights.map((item) => (
-          <article
-            key={item.title}
-            className="bg-green-900/55 border border-green-700 rounded-xl p-5"
-          >
+          <article key={item.title} className="bg-green-900/55 border border-green-700 rounded-xl p-5">
             <h2 className="text-xl font-semibold mb-2">{item.title}</h2>
-            <p className="text-gray-200 leading-relaxed">{item.content}</p>
+            <p className="text-gray-200 leading-relaxed">
+              {expandedSections[item.title]
+                ? item.content
+                : `${item.content.slice(0, 160)}${item.content.length > 160 ? "..." : ""}`}
+            </p>
+            {item.content.length > 160 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setExpandedSections((prev) => ({
+                    ...prev,
+                    [item.title]: !prev[item.title],
+                  }))
+                }
+                className="mt-2 text-sm text-green-300 hover:text-green-200 underline underline-offset-2 cursor-pointer"
+              >
+                {expandedSections[item.title] ? "Read less" : "Read more"}
+              </button>
+            )}
           </article>
         ))}
       </div>
 
+      {/* User feedback section */}
       <div className="bg-green-900/55 border border-green-700 rounded-xl p-6 overflow-hidden">
         <h2 className="text-2xl font-semibold mb-4">User Comments</h2>
         <div className="relative overflow-hidden">
@@ -89,6 +112,7 @@ const AboutPage = () => {
         </div>
       </div>
 
+      {/* User ratings section with numeric score and stars */}
       <div className="bg-green-900/55 border border-green-700 rounded-xl p-6">
         <h2 className="text-2xl font-semibold mb-4">Ratings from Users</h2>
         <div className="grid gap-4 sm:grid-cols-2">

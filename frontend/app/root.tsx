@@ -13,6 +13,8 @@ import Navbar from "./components/Navbar";
 import { AppProvider } from "./context/AppContext";
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", type: "image/png", href: "/leaf.png" },
+  { rel: "apple-touch-icon", href: "/leaf.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
