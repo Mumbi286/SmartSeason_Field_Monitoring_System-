@@ -11,3 +11,12 @@ body {
   @apply bg-slate-950 text-slate-100;
   color-scheme: dark;
 }
+
+@keyframes comment-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

@@ -33,11 +33,11 @@ const SignupPage = () => {
   }
 
   // Creates a user account, then signs in and redirects to dashboard on success.
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
-    const result = registerUser({
+    const result = await registerUser({
       name,
       email,
       password,
@@ -57,7 +57,7 @@ const SignupPage = () => {
       {/* Signup page heading and context */}
       <div>
         <h1 className="text-2xl font-bold text-green-300">Create Account</h1>
-        <p className="text-sm text-slate-300 mt-1">Frontend demo signup (no backend yet).</p>
+        <p className="text-sm text-slate-300 mt-1">Create an account today!</p>
       </div>
 
       {/* Signup form for new Admin/Field Agent accounts */}
@@ -96,14 +96,14 @@ const SignupPage = () => {
         </label>
 
         <label className="block space-y-2 text-sm">
-          <span>Role</span>
+          <span>Are you signing up as an admin or an agent?</span>
           <select
             value={role}
             onChange={(event) => setRole(event.target.value as UserRole)}
             className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
           >
             <option value="admin">Admin</option>
-            <option value="agent">Field Agent</option>
+            <option value="agent">Agent</option>
           </select>
         </label>
 

@@ -18,6 +18,7 @@ const DashboardPage = () => {
     isHydrated,
     users,
     fields,
+    dashboardSummary,
     createField,
     assignField,
     updateFieldProgress,
@@ -40,18 +41,18 @@ const DashboardPage = () => {
   const [assignedAgentId, setAssignedAgentId] = useState("");
   const [agentStageByField, setAgentStageByField] = useState<Record<string, FieldStage>>({});
   const [agentNoteByField, setAgentNoteByField] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState("");
 
   // Shared summary cards for both roles
-  const totals = useMemo(() => {
-    const initial = { total: visibleFields.length, active: 0, atRisk: 0, completed: 0 };
-    return visibleFields.reduce((acc, field) => {
-      const status = getFieldStatus(field);
-      if (status === "Active") acc.active += 1;
-      if (status === "At Risk") acc.atRisk += 1;
-      if (status === "Completed") acc.completed += 1;
-      return acc;
-    }, initial);
-  }, [visibleFields, getFieldStatus]);
+  const totals = useMemo(
+    () => ({
+      total: dashboardSummary.total,
+      active: dashboardSummary.active,
+      atRisk: dashboardSummary.atRisk,
+      completed: dashboardSummary.completed,
+    }),
+    [dashboardSummary]
+  );
 
   if (!isHydrated) {
     return <section className="text-slate-200">Loading dashboard...</section>;
@@ -61,27 +62,37 @@ const DashboardPage = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const handleCreateField = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateField = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    createField({
+    setFormError("");
+    const result = await createField({
       name: fieldName,
       cropType,
       plantingDate,
       assignedAgentId: assignedAgentId || undefined,
     });
+    if (!result.success) {
+      setFormError(result.message ?? "Unable to create field.");
+      return;
+    }
     setFieldName("");
     setCropType("");
     setPlantingDate("");
     setAssignedAgentId("");
   };
 
-  const handleFieldUpdate = (event: FormEvent<HTMLFormElement>, fieldId: string) => {
+  const handleFieldUpdate = async (event: FormEvent<HTMLFormElement>, fieldId: string) => {
     event.preventDefault();
-    updateFieldProgress({
+    setFormError("");
+    const result = await updateFieldProgress({
       fieldId,
       stage: agentStageByField[fieldId] ?? "Growing",
       note: agentNoteByField[fieldId] ?? "",
     });
+    if (!result.success) {
+      setFormError(result.message ?? "Unable to save update.");
+      return;
+    }
     setAgentNoteByField((prev) => ({ ...prev, [fieldId]: "" }));
   };
 
@@ -173,6 +184,7 @@ const DashboardPage = () => {
             >
               Add Field
             </button>
+            {formError && <p className="md:col-span-2 lg:col-span-4 text-sm text-red-300">{formError}</p>}
           </form>
         </article>
       )}
@@ -216,7 +228,13 @@ const DashboardPage = () => {
                     <span>Assign/Reassign Agent</span>
                     <select
                       value={field.assignedAgentId ?? ""}
-                      onChange={(event) => assignField(field.id, event.target.value || undefined)}
+                      onChange={async (event) => {
+                        setFormError("");
+                        const result = await assignField(field.id, event.target.value || undefined);
+                        if (!result.success) {
+                          setFormError(result.message ?? "Unable to assign field.");
+                        }
+                      }}
                       className="w-full md:w-80 rounded border border-slate-700 bg-slate-900 px-3 py-2"
                     >
                       <option value="">Unassigned</option>
@@ -285,6 +303,7 @@ const DashboardPage = () => {
           })}
         </div>
       </article>
+      {formError && <p className="text-sm text-red-300">{formError}</p>}
     </section>
   );
 };

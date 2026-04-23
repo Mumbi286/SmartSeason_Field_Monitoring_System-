@@ -4,14 +4,22 @@ export type UserRole = "admin" | "agent";
 export type FieldStage = "Planted" | "Growing" | "Ready" | "Harvested";
 export type FieldStatus = "Active" | "At Risk" | "Completed";
 
+// Dashboard Summary Type
+type DashboardSummary = {
+  total: number;
+  active: number;
+  atRisk: number;
+  completed: number;
+};
+// App User Type
 export type AppUser = {
   id: string;
   name: string;
   email: string;
-  password: string;
   role: UserRole;
 };
 
+// Field Update Type
 export type FieldUpdate = {
   id: string;
   fieldId: string;
@@ -21,315 +29,388 @@ export type FieldUpdate = {
   createdAt: string;
 };
 
+// Field Record Type
 export type FieldRecord = {
   id: string;
   name: string;
   cropType: string;
   plantingDate: string;
   currentStage: FieldStage;
+  status: FieldStatus;
   assignedAgentId?: string;
   updates: FieldUpdate[];
 };
 
+// Mutation Result Type
+type MutationResult = { success: boolean; message?: string };
+// Login Result Type
+type LoginResult = MutationResult & { role?: UserRole };
+
+// App Context Value Type
 type AppContextValue = {
   isHydrated: boolean;
   users: AppUser[];
   currentUser: AppUser | null;
   fields: FieldRecord[];
-  login: (email: string, password: string) => boolean;
+  dashboardSummary: DashboardSummary;
+  login: (email: string, password: string) => Promise<LoginResult>;
   registerUser: (payload: {
     name: string;
     email: string;
     password: string;
     role: UserRole;
-  }) => { success: boolean; message?: string };
+  }) => Promise<MutationResult>; // Register User
   logout: () => void;
   createField: (payload: {
     name: string;
     cropType: string;
     plantingDate: string;
     assignedAgentId?: string;
-  }) => void;
-  assignField: (fieldId: string, agentId?: string) => void;
+  }) => Promise<MutationResult>; // Create Field
+  assignField: (fieldId: string, agentId?: string) => Promise<MutationResult>; // Assign Field
   updateFieldProgress: (payload: {
     fieldId: string;
     stage: FieldStage;
     note: string;
-  }) => void;
+  }) => Promise<MutationResult>; // Update Field Progress
   getFieldStatus: (field: FieldRecord) => FieldStatus;
 };
 
-const USERS_STORAGE_KEY = "smartseason.users";
+// Backend User Typ
+type BackendUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  created_at: string;
+};
+
+// Backend Auth Response Type
+type BackendAuthResponse = {
+  access_token: string;
+  token_type: string;
+  user: BackendUser;
+};
+
+// Backend Field Type
+type BackendField = {
+  id: number;
+  name: string;
+  crop_type: string;
+  planting_date: string;
+  current_stage: FieldStage;
+  assigned_agent_id: number | null;
+  created_by: number;
+  created_at: string;
+  status: FieldStatus;
+};
+
+// Backend Field Update Type
+type BackendFieldUpdate = {
+  id: number;
+  field_id: number;
+  agent_id: number;
+  stage: FieldStage;
+  note: string | null;
+  created_at: string;
+};
+
+// Stored Session Type
+type StoredSession = {
+  token: string;
+  user: AppUser;
+};
+
+// Session Storage Key
 const SESSION_STORAGE_KEY = "smartseason.session";
-const FIELDS_STORAGE_KEY = "smartseason.fields";
+// API Base URL
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "http://127.0.0.1:8000";
 
-const initialUsers: AppUser[] = [
-  {
-    id: "u_admin",
-    name: "Grace Coordinator",
-    email: "admin@smartseason.test",
-    password: "admin123",
-    role: "admin",
-  },
-  {
-    id: "u_agent_1",
-    name: "Daniel Agent",
-    email: "agent1@smartseason.test",
-    password: "agent123",
-    role: "agent",
-  },
-  {
-    id: "u_agent_2",
-    name: "Amina Agent",
-    email: "agent2@smartseason.test",
-    password: "agent123",
-    role: "agent",
-  },
-];
-
-const initialFields: FieldRecord[] = [
-  {
-    id: "f_001",
-    name: "Kakamega Farm",
-    cropType: "Maize",
-    plantingDate: "2026-03-05",
-    currentStage: "Growing",
-    assignedAgentId: "u_agent_1",
-    updates: [
-      {
-        id: "fu_001",
-        fieldId: "f_001",
-        agentId: "u_agent_1",
-        stage: "Growing",
-        note: "Healthy leaf color and steady early growth.",
-        createdAt: "2026-03-22",
-      },
-    ],
-  },
-  {
-    id: "f_002",
-    name: "Thika Greens Farm",
-    cropType: "Beans",
-    plantingDate: "2026-02-25",
-    currentStage: "Ready",
-    assignedAgentId: "u_agent_2",
-    updates: [
-      {
-        id: "fu_002",
-        fieldId: "f_002",
-        agentId: "u_agent_2",
-        stage: "Ready",
-        note: "Pods filling well. Plan harvest within a week.",
-        createdAt: "2026-04-14",
-      },
-    ],
-  },
-  {
-    id: "f_003",
-    name: "Makueni Ranch",
-    cropType: "Wheat",
-    plantingDate: "2026-01-10",
-    currentStage: "Harvested",
-    assignedAgentId: "u_agent_1",
-    updates: [
-      {
-        id: "fu_003",
-        fieldId: "f_003",
-        agentId: "u_agent_1",
-        stage: "Harvested",
-        note: "Harvest completed with expected output.",
-        createdAt: "2026-03-28",
-      },
-    ],
-  },
-];
-
+// Empty Summary
+const emptySummary: DashboardSummary = { total: 0, active: 0, atRisk: 0, completed: 0 };
 const AppContext = createContext<AppContextValue | null>(null);
 
-const dateDiffInDays = (fromDate: string, toDate: Date) => {
-  const start = new Date(fromDate);
-  const diffMs = toDate.getTime() - start.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-};
+// Map Backend User to App User
+const mapUser = (user: BackendUser): AppUser => ({
+  id: String(user.id),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+});
 
-const computeFieldStatus = (field: FieldRecord): FieldStatus => {
-  if (field.currentStage === "Harvested") {
-    return "Completed";
-  }
+// Map Backend Field Update to App Field Update
+const mapFieldUpdate = (update: BackendFieldUpdate): FieldUpdate => ({
+  id: String(update.id),
+  fieldId: String(update.field_id),
+  agentId: String(update.agent_id),
+  stage: update.stage,
+  note: update.note ?? "",
+  createdAt: update.created_at.slice(0, 10),
+});
 
-  if (!field.assignedAgentId) {
-    return "At Risk";
-  }
+// Map Backend Field to App Field
+const mapField = (field: BackendField, updates: FieldUpdate[]): FieldRecord => ({
+  id: String(field.id),
+  name: field.name,
+  cropType: field.crop_type,
+  plantingDate: field.planting_date,
+  currentStage: field.current_stage,
+  assignedAgentId: field.assigned_agent_id != null ? String(field.assigned_agent_id) : undefined,
+  status: field.status,
+  updates,
+});
 
-  const now = new Date();
-  const latestUpdate = [...field.updates].sort((a, b) =>
-    a.createdAt > b.createdAt ? -1 : 1
-  )[0];
-  const daysSinceUpdate = latestUpdate
-    ? dateDiffInDays(latestUpdate.createdAt, now)
-    : dateDiffInDays(field.plantingDate, now);
-  const daysSincePlanting = dateDiffInDays(field.plantingDate, now);
-
-  if (daysSinceUpdate > 14 || (field.currentStage === "Planted" && daysSincePlanting > 21)) {
-    return "At Risk";
-  }
-
-  return "Active";
-};
-
+// App Provider
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [users, setUsers] = useState<AppUser[]>(initialUsers);
-  const [fields, setFields] = useState<FieldRecord[]>(initialFields);
+  const [token, setToken] = useState<string | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [fields, setFields] = useState<FieldRecord[]>([]);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary>(emptySummary);
+
+  const persistSession = (nextToken: string | null, nextUser: AppUser | null) => {
+    if (typeof window === "undefined") return;
+
+    if (!nextToken || !nextUser) {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      return;
+    }
+    const payload: StoredSession = { token: nextToken, user: nextUser };
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+  };
+
+  const fetchJson = async <T,>(path: string, init: RequestInit = {}, authToken?: string): Promise<T> => {
+    const headers = new Headers(init.headers);
+    if (!headers.has("Content-Type") && init.body) {
+      headers.set("Content-Type", "application/json");
+    }
+    if (authToken) {
+      headers.set("Authorization", `Bearer ${authToken}`);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+    if (!response.ok) {
+      let detail = "Request failed.";
+      try {
+        const body = (await response.json()) as { detail?: string };
+        if (body?.detail) detail = body.detail;
+      } catch {
+        // ignore non-json error bodies
+      }
+      throw new Error(detail);
+    }
+    return (await response.json()) as T;
+  };
+
+  const hydrateUserDirectory = async (authToken: string, authUser: AppUser) => {
+    if (authUser.role !== "admin") {
+      setUsers([authUser]);
+      return;
+    }
+
+    try {
+      const agents = await fetchJson<BackendUser[]>("/users/agents", {}, authToken);
+      const allUsers = [authUser, ...agents.map(mapUser)];
+      const uniqueUsers = Array.from(new Map(allUsers.map((user) => [user.id, user])).values());
+      setUsers(uniqueUsers);
+    } catch {
+      setUsers([authUser]);
+    }
+  };
+
+  const hydrateFields = async (authToken: string) => {
+    const backendFields = await fetchJson<BackendField[]>("/fields", {}, authToken);
+    const fieldsWithUpdates = await Promise.all(
+      backendFields.map(async (field) => {
+        const updates = await fetchJson<BackendFieldUpdate[]>(
+          `/fields/${field.id}/updates`,
+          {},
+          authToken
+        );
+        return mapField(field, updates.map(mapFieldUpdate));
+      })
+    );
+    setFields(fieldsWithUpdates);
+  };
+
+  const hydrateSummary = async (authToken: string) => {
+    const summary = await fetchJson<DashboardSummary>("/dashboard/summary", {}, authToken);
+    setDashboardSummary(summary);
+  };
+
+  const hydrateAfterAuth = async (authToken: string, authUser: AppUser) => {
+    await Promise.all([
+      hydrateUserDirectory(authToken, authUser),
+      hydrateFields(authToken),
+      hydrateSummary(authToken),
+    ]);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const storedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const storedFields = window.localStorage.getItem(FIELDS_STORAGE_KEY);
-    const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const hydrate = async () => {
+      const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!storedSession) {
+        setIsHydrated(true);
+        return;
+      }
 
-    const parsedUsers = storedUsers ? (JSON.parse(storedUsers) as AppUser[]) : initialUsers;
-    const parsedFields = storedFields
-      ? (JSON.parse(storedFields) as FieldRecord[])
-      : initialFields;
-    const sessionEmail = storedSession ? (JSON.parse(storedSession) as string) : null;
-
-    setUsers(parsedUsers);
-    setFields(parsedFields);
-    if (sessionEmail) {
-      const sessionUser = parsedUsers.find((user) => user.email === sessionEmail) ?? null;
-      setCurrentUser(sessionUser);
-    }
-    setIsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === "undefined") return;
-    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  }, [users, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === "undefined") return;
-    window.localStorage.setItem(FIELDS_STORAGE_KEY, JSON.stringify(fields));
-  }, [fields, isHydrated]);
-
-  const login = (email: string, password: string) => {
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = users.find(
-      (candidate) =>
-        candidate.email.toLowerCase() === normalizedEmail &&
-        candidate.password === password
-    );
-
-    if (!user) {
-      return false;
-    }
-
-    setCurrentUser(user);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user.email));
-    }
-    return true;
-  };
-
-  const registerUser: AppContextValue["registerUser"] = ({
-    name,
-    email,
-    password,
-    role,
-  }) => {
-    const normalizedEmail = email.toLowerCase().trim();
-    const existingUser = users.find(
-      (candidate) => candidate.email.toLowerCase() === normalizedEmail
-    );
-
-    if (existingUser) {
-      return { success: false, message: "An account with this email already exists." };
-    }
-
-    const newUser: AppUser = {
-      id: `u_${Date.now()}`,
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-      role,
+      try {
+        const parsed = JSON.parse(storedSession) as StoredSession;
+        setToken(parsed.token);
+        setCurrentUser(parsed.user);
+        await hydrateAfterAuth(parsed.token, parsed.user);
+      } catch {
+        setToken(null);
+        setCurrentUser(null);
+        setUsers([]);
+        setFields([]);
+        setDashboardSummary(emptySummary);
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      } finally {
+        setIsHydrated(true);
+      }
     };
 
-    setUsers((prev) => [...prev, newUser]);
-    setCurrentUser(newUser);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newUser.email));
-    }
+    void hydrate();
+  }, []);
 
-    return { success: true };
+  // Login
+  const login: AppContextValue["login"] = async (email, password) => {
+    try {
+      const auth = await fetchJson<BackendAuthResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const nextUser = mapUser(auth.user);
+      setToken(auth.access_token);
+      setCurrentUser(nextUser);
+      persistSession(auth.access_token, nextUser);
+      await hydrateAfterAuth(auth.access_token, nextUser);
+
+      return { success: true, role: nextUser.role };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to login.",
+      };
+    }
+  };
+
+  const registerUser: AppContextValue["registerUser"] = async ({ name, email, password, role }) => {
+    try {
+      const auth = await fetchJson<BackendAuthResponse>("/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role,
+        }),
+      });
+
+      const nextUser = mapUser(auth.user);
+      setToken(auth.access_token);
+      setCurrentUser(nextUser);
+      persistSession(auth.access_token, nextUser);
+      await hydrateAfterAuth(auth.access_token, nextUser);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to create account.",
+      };
+    }
   };
 
   const logout = () => {
+    setToken(null);
     setCurrentUser(null);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(SESSION_STORAGE_KEY);
-    }
+    setUsers([]);
+    setFields([]);
+    setDashboardSummary(emptySummary);
+    persistSession(null, null);
   };
 
-  const createField: AppContextValue["createField"] = ({
+  const createField: AppContextValue["createField"] = async ({
     name,
     cropType,
     plantingDate,
     assignedAgentId,
   }) => {
-    setFields((prev) => [
-      ...prev,
-      {
-        id: `f_${Date.now()}`,
-        name: name.trim(),
-        cropType: cropType.trim(),
-        plantingDate,
-        currentStage: "Planted",
-        assignedAgentId: assignedAgentId || undefined,
-        updates: [],
-      },
-    ]);
+    if (!token) return { success: false, message: "Authentication required." };
+    try {
+      await fetchJson<BackendField>(
+        "/fields",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: name.trim(),
+            crop_type: cropType.trim(),
+            planting_date: plantingDate,
+            current_stage: "Planted",
+            assigned_agent_id: assignedAgentId ? Number(assignedAgentId) : null,
+          }),
+        },
+        token
+      );
+      await Promise.all([hydrateFields(token), hydrateSummary(token)]);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to create field.",
+      };
+    }
   };
 
-  const assignField: AppContextValue["assignField"] = (fieldId, agentId) => {
-    setFields((prev) =>
-      prev.map((field) =>
-        field.id === fieldId ? { ...field, assignedAgentId: agentId || undefined } : field
-      )
-    );
+  const assignField: AppContextValue["assignField"] = async (fieldId, agentId) => {
+    if (!token) return { success: false, message: "Authentication required." };
+    try {
+      await fetchJson<BackendField>(
+        `/fields/${fieldId}/assign`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            assigned_agent_id: agentId ? Number(agentId) : null,
+          }),
+        },
+        token
+      );
+      await Promise.all([hydrateFields(token), hydrateSummary(token)]);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to assign field.",
+      };
+    }
   };
 
-  const updateFieldProgress: AppContextValue["updateFieldProgress"] = ({
-    fieldId,
-    stage,
-    note,
-  }) => {
-    if (!currentUser || currentUser.role !== "agent") return;
-
-    setFields((prev) =>
-      prev.map((field) => {
-        if (field.id !== fieldId || field.assignedAgentId !== currentUser.id) {
-          return field;
-        }
-
-        const update: FieldUpdate = {
-          id: `fu_${Date.now()}`,
-          fieldId,
-          agentId: currentUser.id,
-          stage,
-          note: note.trim(),
-          createdAt: new Date().toISOString().slice(0, 10),
-        };
-
-        return {
-          ...field,
-          currentStage: stage,
-          updates: [update, ...field.updates],
-        };
-      })
-    );
+  const updateFieldProgress: AppContextValue["updateFieldProgress"] = async ({ fieldId, stage, note }) => {
+    if (!token) return { success: false, message: "Authentication required." };
+    try {
+      await fetchJson<BackendFieldUpdate>(
+        `/fields/${fieldId}/updates`,
+        {
+          method: "POST",
+          body: JSON.stringify({ stage, note: note.trim() }),
+        },
+        token
+      );
+      await Promise.all([hydrateFields(token), hydrateSummary(token)]);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to submit field update.",
+      };
+    }
   };
 
   const value = useMemo<AppContextValue>(
@@ -338,15 +419,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       users,
       currentUser,
       fields,
+      dashboardSummary,
       login,
       registerUser,
       logout,
       createField,
       assignField,
       updateFieldProgress,
-      getFieldStatus: computeFieldStatus,
+      getFieldStatus: (field) => field.status,
     }),
-    [isHydrated, users, currentUser, fields]
+    [isHydrated, users, currentUser, fields, dashboardSummary]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
