@@ -7,17 +7,17 @@ A full-stack field monitoring application for agricultural operations. Coordinat
 - **Authentication** — JWT-based login and signup with admin and field-agent roles.
 - **Field management** — Create fields, assign or unassign agents, and record progress updates.
 - **Dashboard** — Role-scoped summaries (totals, active, at risk, completed).
-- **Status logic (backend)** — Single source of truth for field status: *Active*, *At Risk*, or *Completed*, derived from stage, assignment, last update, and planting timeline.
+- **Status logic (backend)** — Single source of truth for field status: _Active_, _At Risk_, or _Completed_, derived from stage, assignment, last update, and planting timeline.
 - **Web UI** — React Router + Tailwind CSS: home, about, contact, login, signup, and role-aware dashboard.
 
 ## Tech Stack
 
-| Layer    | Technology |
-|----------|------------|
+| Layer    | Technology                                                                         |
+| -------- | ---------------------------------------------------------------------------------- |
 | Backend  | Python 3.8+, FastAPI, SQLAlchemy, Alembic, PostgreSQL (psycopg), Pydantic Settings |
-| Auth     | JWT (python-jose), bcrypt |
-| Frontend | React 19, React Router 7, TypeScript, Vite, Tailwind CSS 4 |
-| Tooling  | Alembic migrations, pytest (backend) |
+| Auth     | JWT (python-jose), bcrypt                                                          |
+| Frontend | React 19, React Router 7, TypeScript, Vite, Tailwind CSS 4                         |
+| Tooling  | Alembic migrations, pytest (backend)                                               |
 
 ## Repository layout
 
@@ -34,7 +34,7 @@ smartseason_field_monitoring_system/
 │   │   ├── services/        # Security, field status, etc.
 │   │   └── scripts/         # seed_reference_data
 │   ├── alembic/             # Migrations
-│   ├── tests/               # Pytest 
+│   ├── tests/               # Pytest
 │   └── requirements.txt
 ├── frontend/                # React app
 │   ├── app/                 # Routes, context, components
@@ -45,22 +45,21 @@ smartseason_field_monitoring_system/
 
 ## Prerequisites
 
-- **Python** 
-- **Node.js**  and npm
-- **PostgreSQL** 
+- **Python**
+- **Node.js** and npm
+- **PostgreSQL**
 - `psql` - manages databases and users
 
 ## Environment variables (backend)
 
-Create `backend/.env` 
+Create `backend/.env`
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | SQLAlchemy URL |
-| `JWT_SECRET_KEY` | Strong random string for signing tokens |
-| `JWT_ALGORITHM` | e.g. `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime |
-
+| Variable                      | Description                             |
+| ----------------------------- | --------------------------------------- |
+| `DATABASE_URL`                | SQLAlchemy URL                          |
+| `JWT_SECRET_KEY`              | Strong random string for signing tokens |
+| `JWT_ALGORITHM`               | e.g. `HS256`                            |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime                   |
 
 ## Database setup
 
@@ -94,8 +93,8 @@ source .venv/bin/activate
 python -m uvicorn app.main:app --reload
 ```
 
-- API base: [http://127.0.0.1:8000](http://127.0.0.1:8000)  
-- Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
+- API base: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - Health: `GET /health`
 
 CORS is configured for local development (`http://localhost:5173` and `http://127.0.0.1:5173`). Extend in `app/main.py` for other origins in production.
@@ -119,12 +118,12 @@ npm run typecheck
 
 ## API overview (high level)
 
-| Area | Examples |
-|------|----------|
-| Auth | `POST /auth/login`, `POST /auth/signup` |
-| Users (admin) | `GET /users/agents` |
-| Fields | `GET/POST /fields`, `PATCH /fields/{id}/assign`, `POST /fields/{id}/updates`, `GET /fields/{id}/updates` |
-| Dashboard | `GET /dashboard/summary` |
+| Area          | Examples                                                                                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| Auth          | `POST /auth/login`, `POST /auth/signup`                                                                  |
+| Users (admin) | `GET /users/agents`                                                                                      |
+| Fields        | `GET/POST /fields`, `PATCH /fields/{id}/assign`, `POST /fields/{id}/updates`, `GET /fields/{id}/updates` |
+| Dashboard     | `GET /dashboard/summary`                                                                                 |
 
 Business rules: admins manage all fields; agents see and update only assigned fields, where applicable.
 
@@ -141,4 +140,3 @@ SELECT * FROM fields;
 ## Licenses
 
 MIT
-
