@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     # Comma-separated browser origins"
-    CORS_ALLOW_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,https://smart-season-field-monitoring-syste-pink.vercel.app/"
+    CORS_ALLOW_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,https://smart-season-field-monitoring-syste-pink.vercel.app"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

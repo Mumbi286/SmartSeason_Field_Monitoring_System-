@@ -124,10 +124,11 @@ type StoredSession = {
 // Session Storage Key
 const SESSION_STORAGE_KEY = "smartseason.session";
 // API Base URL
-const API_BASE_URL =
+const RAW_API_BASE_URL =
   (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ||
   "http://127.0.0.1:8000";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "");
 
 // Empty Summary
 const emptySummary: DashboardSummary = { total: 0, active: 0, atRisk: 0, completed: 0 };
@@ -192,7 +193,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       headers.set("Authorization", `Bearer ${authToken}`);
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const requestUrl = `${API_BASE_URL}${normalizedPath}`;
+    // #region agent log
+    fetch('http://127.0.0.1:7726/ingest/0f28b708-14cf-4bf2-b328-d7294c207c4d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9f9890'},body:JSON.stringify({sessionId:'9f9890',runId:'run1',hypothesisId:'H1',location:'frontend/app/context/AppContext.tsx:199',message:'frontend fetch request',data:{rawApiBaseUrl:RAW_API_BASE_URL,apiBaseUrl:API_BASE_URL,path,normalizedPath,requestUrl,method:init.method ?? 'GET'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    const response = await fetch(requestUrl, { ...init, headers });
+    // #region agent log
+    fetch('http://127.0.0.1:7726/ingest/0f28b708-14cf-4bf2-b328-d7294c207c4d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9f9890'},body:JSON.stringify({sessionId:'9f9890',runId:'run1',hypothesisId:'H3',location:'frontend/app/context/AppContext.tsx:200',message:'frontend fetch response',data:{requestUrl,status:response.status,ok:response.ok},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     if (!response.ok) {
       let detail = "Request failed.";
       try {
