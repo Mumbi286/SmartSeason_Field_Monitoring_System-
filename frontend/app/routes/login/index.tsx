@@ -87,10 +87,10 @@ const LoginPage = () => {
 
       <article className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <p className="text-xs text-slate-300">
-          Admin example: <span className="text-slate-100">admintwo@smartseason.com / test</span>
+          Admin example: <span className="text-slate-100"> wekesa@smartseason.com/ 1234567</span>
         </p>
         <p className="text-xs text-slate-300">
-          Agent example: <span className="text-slate-100">agent@smartseason.com / test123</span>
+          Agent example: <span className="text-slate-100">edkamau@smartseason.com /1234567 </span>
         </p>
       </article>
 
