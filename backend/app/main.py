@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,9 +8,10 @@ from app.core.config import settings
 
 app = FastAPI()
 
-_cors_origins = [
-    o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(",") if o.strip()
-]
+_cors_origins = [o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(",") if o.strip()]
+_frontend_url = os.getenv("FRONTEND_URL", "").strip()
+if _frontend_url and _frontend_url not in _cors_origins:
+    _cors_origins.append(_frontend_url)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,

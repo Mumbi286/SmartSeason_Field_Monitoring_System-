@@ -125,7 +125,9 @@ type StoredSession = {
 const SESSION_STORAGE_KEY = "smartseason.session";
 // API Base URL
 const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "http://127.0.0.1:8000";
+  (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ||
+  "http://127.0.0.1:8000";
 
 // Empty Summary
 const emptySummary: DashboardSummary = { total: 0, active: 0, atRisk: 0, completed: 0 };
