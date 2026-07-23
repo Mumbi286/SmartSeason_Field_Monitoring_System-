@@ -4,11 +4,11 @@ A full-stack field monitoring application for agricultural operations. Coordinat
 
 ## Features
 
-- **Authentication** — JWT-based login and signup with admin and field-agent roles.
-- **Field management** — Create fields, assign or unassign agents, and record progress updates.
-- **Dashboard** — Role-scoped summaries (totals, active, at risk, completed).
-- **Status logic (backend)** — Single source of truth for field status: _Active_, _At Risk_, or _Completed_, derived from stage, assignment, last update, and planting timeline.
-- **Web UI** — React Router + Tailwind CSS: home, about, contact, login, signup, and role-aware dashboard.
+- **Authentication** - JWT-based login and signup with admin and field-agent roles.
+- **Field management** - Create fields, assign or unassign agents, and record progress updates.
+- **Dashboard** - Role-scoped summaries (totals, active, at risk, completed).
+- **Status logic (backend)** - Single source of truth for field status: _Active_, _At Risk_, or _Completed_, derived from stage, assignment, last update, and planting timeline.
+- **Web UI** - React Router + Tailwind CSS: home, about, contact, login, signup, and role-aware dashboard.
 
 ## Tech Stack
 
